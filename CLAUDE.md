@@ -42,15 +42,20 @@ internal-admin/frontend/  Next.js — Mindfries' own ops panel (PRD §1.11) + th
 candidate/frontend/       Next.js — the Candidate Engineering Workspace (PRD §1.6)
                           /ide is the whole feature; see its own docs
 candidate/backend/        FastAPI skeleton — /health and /status only so far
-company/frontend/         Next.js — the Company Admin Portal (PRD §1.4): invite candidates,
-                          pick a published assessment, review status. Company-facing;
-                          distinct from internal-admin/. Reports is a stub — depends on
-                          evidence telemetry + evaluation, neither built yet.
+company/frontend/         Next.js — an earlier, partial scaffold of the Company Admin
+                          Portal. Superseded by company-dashboard/frontend/ below; left
+                          untouched rather than merged/deleted.
+company-dashboard/frontend/ Next.js — the Company Admin Portal (PRD §1.4): invite
+                          candidates, pick a published assessment, review status, manage
+                          the team, and edit company settings. Company-facing; distinct
+                          from internal-admin/. Reports is a stub — depends on evidence
+                          telemetry + evaluation, neither built yet.
 supabase/migrations/      The shared Postgres schema — see ARCHITECTURE.md
 ```
 
 Vercel builds from `candidate/frontend`. `internal-admin/frontend`,
-`company/frontend`, and the FastAPI backends are not deployed yet.
+`company/frontend`, `company-dashboard/frontend`, and the FastAPI backends are
+not deployed yet.
 
 ## Conventions
 
