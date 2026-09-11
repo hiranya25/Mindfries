@@ -21,7 +21,7 @@ export default async function OverviewPage() {
   return (
     <div className="space-y-8">
       <PageHeader eyebrow={session.company.name} title="Overview">
-        Every candidate you've invited, at a glance.
+        Every candidate you&apos;ve invited, at a glance.
       </PageHeader>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

@@ -24,8 +24,8 @@ export default async function CandidatesPage() {
         title="Candidates"
         action={<InviteCandidateForm templates={templates} />}
       >
-        Invite a candidate to run a published assessment for a role. This is where "create a role" and "invite a
-        candidate" happen in one step.
+        Invite a candidate to run a published assessment for a role. This is where &ldquo;create a role&rdquo; and &ldquo;invite a
+        candidate&rdquo; happen in one step.
       </PageHeader>
 
       <div className="hair-card overflow-hidden">

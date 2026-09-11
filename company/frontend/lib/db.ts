@@ -3,7 +3,6 @@ import { db } from "./supabaseAdmin";
 import type {
   Assessment,
   AssessmentSession,
-  Company,
   GameTemplate,
   TeamMember,
 } from "./types";
