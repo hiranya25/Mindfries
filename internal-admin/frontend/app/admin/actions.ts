@@ -3,7 +3,7 @@
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import {
-  addOnboarded, addWaitlist, createTemplate, recordEmailEvent, setLeadStage,
+  addOnboarded, addWaitlist, createCompanyAccount, createTemplate, recordEmailEvent, setLeadStage,
   setSessionState, setTemplateStatus,
 } from "@/lib/db";
 import { sendMail, NOTIFY_EMAIL } from "@/lib/mailer";
@@ -48,6 +48,14 @@ export async function onboardCompany(input: {
   try {
     if (!input.company.trim() || !input.adminEmail.trim()) throw new Error("Company and admin email are required");
     const tempPassword = randomBytes(9).toString("base64url"); // ~12 chars, emailed once
+
+    // Real product-side account + login (company/frontend, the candidate
+    // app) — distinct from the CRM record addOnboarded writes below. Do this
+    // before emailing so we never promise a login that doesn't exist.
+    await createCompanyAccount({
+      company: input.company, adminEmail: input.adminEmail, plan: input.plan, tempPassword,
+    });
+
     await sendMail({
       to: input.adminEmail,
       subject: `Your Mindfries workspace for ${input.company} is ready`,

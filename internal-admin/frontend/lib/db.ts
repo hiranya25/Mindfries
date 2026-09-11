@@ -141,6 +141,52 @@ export async function listOnboarded(): Promise<OnboardedCompany[]> {
 }
 
 // ── Shared product tables (0002_product.sql) ────────────────────────────────
+
+// Provision the real product-side company account and its login. Distinct
+// from onboarded_companies above (that's only the sales/CRM record) — this
+// `companies` row and Supabase Auth user are what company/frontend and the
+// candidate app actually reference. company_id/role live in the auth user's
+// app_metadata (server-settable only) rather than user_metadata, so a signed-
+// in company admin can't repoint their own company_id via auth.updateUser().
+//
+// Not wrapped in a transaction: if the auth.createUser call fails after the
+// companies insert succeeds, you get an orphaned company with no login. Rare
+// in practice (would need the email to already exist as an auth user) and
+// recoverable by re-running onboarding for that email — an RPC-based atomic
+// version would close this but isn't warranted yet.
+export async function createCompanyAccount(input: {
+  company: string;
+  adminEmail: string;
+  plan: Plan;
+  tempPassword: string;
+}): Promise<string> {
+  const c = db();
+  if (!c) throw new Error("Supabase not configured");
+
+  const { data: companyRow, error: companyError } = await c
+    .from("companies")
+    .insert({
+      name: input.company,
+      plan: input.plan,
+      status: "active",
+      team: [{ email: input.adminEmail, role: "admin" }],
+    })
+    .select("id")
+    .single();
+  if (companyError) throw companyError;
+  const companyId = companyRow.id as string;
+
+  const { error: authError } = await c.auth.admin.createUser({
+    email: input.adminEmail,
+    password: input.tempPassword,
+    email_confirm: true,
+    app_metadata: { company_id: companyId, role: "admin" },
+  });
+  if (authError) throw authError;
+
+  return companyId;
+}
+
 // The Assessment/Game Library — internal-admin authors, candidate app consumes.
 
 function toTemplate(r: any): GameTemplate {

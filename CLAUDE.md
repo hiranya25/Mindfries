@@ -28,6 +28,7 @@ explain decisions → submit.
 | What are we building, and why? | [`System_Archetect_And_PRD.md`](System_Archetect_And_PRD.md) — **the source of truth** for product and architecture |
 | What is actually built right now? | [`spec.md`](spec.md) — implemented reality vs. the PRD |
 | What's done, what's next? | [`task.md`](task.md) |
+| How do the apps share data, and why isn't there a FastAPI CRUD backend yet? | [`ARCHITECTURE.md`](ARCHITECTURE.md) — the Supabase decision |
 | How does the candidate IDE work internally? | [`candidate/frontend/src/app/ide/`](candidate/frontend/src/app/ide/) — its own spec / task / contributor notes |
 
 Don't copy PRD content into other docs. Link to the section instead.
@@ -35,15 +36,21 @@ Don't copy PRD content into other docs. Link to the section instead.
 ## Repo map
 
 ```
-apps/web/            Next.js — Internal Admin portal (Mindfries' own ops panel, PRD §1.11)
-                     /admin/companies, /admin/library, /admin/sessions, /login
-candidate/frontend/  Next.js — the Candidate Engineering Workspace (PRD §1.6)
-                     /ide is the whole feature; see its own docs
-candidate/backend/   FastAPI skeleton — /health and /status only so far
+internal-admin/frontend/  Next.js — Mindfries' own ops panel (PRD §1.11) + the Lead Tracker
+                          /admin/{companies,library,sessions,tracker,onboarding,waitlist,costs}
+                          (renamed from apps/web/)
+candidate/frontend/       Next.js — the Candidate Engineering Workspace (PRD §1.6)
+                          /ide is the whole feature; see its own docs
+candidate/backend/        FastAPI skeleton — /health and /status only so far
+company/frontend/         Next.js — the Company Admin Portal (PRD §1.4): invite candidates,
+                          pick a published assessment, review status. Company-facing;
+                          distinct from internal-admin/. Reports is a stub — depends on
+                          evidence telemetry + evaluation, neither built yet.
+supabase/migrations/      The shared Postgres schema — see ARCHITECTURE.md
 ```
 
-Vercel builds from `candidate/frontend`. `apps/web` and the backend are not
-deployed yet.
+Vercel builds from `candidate/frontend`. `internal-admin/frontend`,
+`company/frontend`, and the FastAPI backends are not deployed yet.
 
 ## Conventions
 
