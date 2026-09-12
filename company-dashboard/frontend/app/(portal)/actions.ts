@@ -4,16 +4,19 @@ import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import {
   createAssessment,
+  createRole,
   createTeammateAccount,
   deleteTeammateAccount,
+  getRole,
+  setRoleStatus,
   updateCompanyProfile,
   updateCompanyTeam,
 } from "@/lib/db";
 import { mailerReady, sendMail } from "@/lib/mailer";
-import { canEditSettings, canInviteCandidate, canManageTeam } from "@/lib/permissions";
+import { canEditSettings, canInviteCandidate, canManageRoles, canManageTeam } from "@/lib/permissions";
 import { getCurrentSession } from "@/lib/session";
 import { isValidEmail, isValidFreeText } from "@/lib/validate";
-import type { MemberRole } from "@/lib/types";
+import type { MemberRole, RoleStatus } from "@/lib/types";
 
 type Result = { ok: true; warning?: string } | { ok: false; error: string };
 const fail = (e: unknown): Result => {
@@ -40,7 +43,7 @@ export async function inviteCandidate(input: {
   templateId: string;
   candidateName: string;
   candidateEmail: string;
-  role: string;
+  roleId: string;
   dueDate: string | null;
 }): Promise<Result> {
   try {
@@ -49,10 +52,22 @@ export async function inviteCandidate(input: {
     if (!canInviteCandidate(session.role)) throw new Error("You don't have permission to invite candidates");
     if (!isValidEmail(input.candidateEmail)) throw new Error("Enter a valid candidate email");
     if (!input.templateId) throw new Error("Pick an assessment template");
+    if (!input.roleId) throw new Error("Pick a role");
     if (input.candidateName && !isValidFreeText(input.candidateName)) throw new Error("Candidate name is too long");
-    if (input.role && !isValidFreeText(input.role)) throw new Error("Role is too long");
 
-    await createAssessment({ companyId: session.company.id, ...input });
+    const role = await getRole(session.company.id, input.roleId);
+    if (!role) throw new Error("That role no longer exists");
+    if (role.status !== "open") throw new Error("That role is closed — reopen it before inviting against it");
+
+    await createAssessment({
+      companyId: session.company.id,
+      templateId: input.templateId,
+      candidateName: input.candidateName,
+      candidateEmail: input.candidateEmail,
+      roleId: role.id,
+      roleTitle: role.title,
+      dueDate: input.dueDate,
+    });
     revalidatePath("/candidates");
     revalidatePath("/");
 
@@ -61,13 +76,55 @@ export async function inviteCandidate(input: {
       to: input.candidateEmail,
       subject: `${session.company.name} invited you to an assessment`,
       text: [
-        `${session.company.name} invited you to complete an assessment${input.role ? ` for the ${input.role} role` : ""}.`,
+        `${session.company.name} invited you to complete an assessment for the ${role.title} role.`,
         candidateAppUrl
           ? `Get started here: ${candidateAppUrl}`
           : "Ask them how to get started — a direct link isn't set up yet.",
       ].join("\n\n"),
     });
     return warning ? { ok: true, warning } : { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function createRoleAction(input: {
+  title: string;
+  requirements: string;
+  techStack: string;
+}): Promise<Result> {
+  try {
+    const session = await getCurrentSession();
+    if (!session) throw new Error("Not signed in");
+    if (!canManageRoles(session.role)) throw new Error("You don't have permission to create roles");
+    if (!isValidFreeText(input.title)) throw new Error("Role title is required");
+
+    const requirements = input.requirements.trim() || null;
+    const techStack = input.techStack
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 20);
+
+    await createRole({ companyId: session.company.id, title: input.title.trim(), requirements, techStack });
+    revalidatePath("/roles");
+    revalidatePath("/candidates");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function setRoleStatusAction(id: string, status: RoleStatus): Promise<Result> {
+  try {
+    const session = await getCurrentSession();
+    if (!session) throw new Error("Not signed in");
+    if (!canManageRoles(session.role)) throw new Error("You don't have permission to manage roles");
+
+    await setRoleStatus(session.company.id, id, status);
+    revalidatePath("/roles");
+    revalidatePath("/candidates");
+    return { ok: true };
   } catch (e) {
     return fail(e);
   }

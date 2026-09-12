@@ -45,9 +45,10 @@ candidate/backend/        FastAPI skeleton — /health and /status only so far
 company/frontend/         Next.js — an earlier, partial scaffold of the Company Admin
                           Portal. Superseded by company-dashboard/frontend/ below; left
                           untouched rather than merged/deleted.
-company-dashboard/frontend/ Next.js — the Company Admin Portal (PRD §1.4): invite
-                          candidates, pick a published assessment, review status, manage
-                          the team, and edit company settings. Company-facing; distinct
+company-dashboard/frontend/ Next.js — the Company Admin Portal (PRD §1.4): create
+                          roles, invite candidates against them, pick a published
+                          assessment, review status (grouped by role), manage the team,
+                          and edit company settings. Company-facing; distinct
                           from internal-admin/. Reports is a stub — depends on evidence
                           telemetry + evaluation, neither built yet.
 supabase/migrations/      The shared Postgres schema — see ARCHITECTURE.md

@@ -1,23 +1,26 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, Field, Input, Modal, Select } from "@/components/ui";
 import { taskVariantLabel } from "@/lib/format";
 import { inviteCandidate } from "@/app/(portal)/actions";
-import type { GameTemplate } from "@/lib/types";
+import type { GameTemplate, Role } from "@/lib/types";
 
 export function InviteCandidateForm({
   templates,
+  roles,
   canInvite,
 }: {
   templates: GameTemplate[];
+  roles: Role[];
   canInvite: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [templateId, setTemplateId] = useState(templates[0]?.id ?? "");
-  const [role, setRole] = useState("");
+  const [roleId, setRoleId] = useState(roles[0]?.id ?? "");
   const [candidateName, setCandidateName] = useState("");
   const [candidateEmail, setCandidateEmail] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -26,7 +29,6 @@ export function InviteCandidateForm({
   const [loading, setLoading] = useState(false);
 
   function reset() {
-    setRole("");
     setCandidateName("");
     setCandidateEmail("");
     setDueDate("");
@@ -40,7 +42,7 @@ export function InviteCandidateForm({
       templateId,
       candidateName,
       candidateEmail,
-      role,
+      roleId,
       dueDate: dueDate || null,
     });
     setLoading(false);
@@ -56,12 +58,14 @@ export function InviteCandidateForm({
 
   if (!canInvite) return null;
 
+  const blocked = templates.length === 0 ? "templates" : roles.length === 0 ? "roles" : null;
+
   return (
     <>
       {notice && (
         <div className="mb-4 rounded-lg border border-hair bg-accent-soft px-4 py-3 text-sm text-dim">{notice}</div>
       )}
-      <Button onClick={() => setOpen(true)} disabled={templates.length === 0}>
+      <Button onClick={() => setOpen(true)} disabled={!!blocked}>
         + Invite candidate
       </Button>
 
@@ -74,22 +78,36 @@ export function InviteCandidateForm({
             <Button variant="ghost" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={submit} disabled={loading || !candidateEmail.trim() || !templateId}>
+            <Button onClick={submit} disabled={loading || !candidateEmail.trim() || !templateId || !roleId}>
               {loading ? "Sending…" : "Send invite"}
             </Button>
           </>
         }
       >
         <div className="space-y-4">
-          {templates.length === 0 ? (
+          {blocked === "roles" ? (
+            <p className="text-sm text-dim">
+              No open roles yet — create one on the{" "}
+              <Link href="/roles" className="text-accent hover:underline">
+                Roles
+              </Link>{" "}
+              page, then come back to invite a candidate against it.
+            </p>
+          ) : blocked === "templates" ? (
             <p className="text-sm text-dim">
               No published assessment templates yet — these are authored by the Mindfries team. Check back once one
               is published.
             </p>
           ) : (
             <>
-              <Field label="Role" hint="e.g. Backend Engineer — free text, not a separate roster">
-                <Input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Backend Engineer" />
+              <Field label="Role">
+                <Select value={roleId} onChange={(e) => setRoleId(e.target.value)}>
+                  {roles.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.title}
+                    </option>
+                  ))}
+                </Select>
               </Field>
               <Field label="Assessment template">
                 <Select value={templateId} onChange={(e) => setTemplateId(e.target.value)}>

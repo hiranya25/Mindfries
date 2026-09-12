@@ -34,6 +34,21 @@ export interface Company {
 export type TaskVariant = "bug_fix" | "feature" | "refactor" | "debug";
 export type TemplateStatus = "draft" | "published";
 
+export type RoleStatus = "open" | "closed";
+
+// PRD §1.4 Role Management — a company can be hiring for several of these at
+// once. Assessments reference one via roleId; see ARCHITECTURE.md for how
+// this stays additive to the pre-existing assessments.role text column.
+export interface Role {
+  id: string;
+  companyId: string;
+  title: string;
+  status: RoleStatus;
+  requirements: string | null;
+  techStack: string[];
+  createdAt: string;
+}
+
 export interface RubricCriterion {
   id: string;
   label: string;
@@ -53,16 +68,19 @@ export interface GameTemplate {
 
 export type AssessmentStatus = "invited" | "in_progress" | "submitted" | "closed";
 
-// A candidate invited to run a template for this company (PRD §1.4's "Roles"
-// + "Candidates" collapsed into one table — see ARCHITECTURE.md).
+// A candidate invited to run a template for this company, against a Role.
 export interface Assessment {
   id: string;
   companyId: string;
   templateId: string | null;
   templateName: string | null;
+  roleId: string | null;
+  // Display name for the role: the live roles.title when roleId is set,
+  // falling back to the legacy free-text assessments.role column for rows
+  // written before Role existed as its own entity.
+  role: string | null;
   candidateName: string | null;
   candidateEmail: string;
-  role: string | null;
   status: AssessmentStatus;
   dueDate: string | null;
   matchScore: number | null;

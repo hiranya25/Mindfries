@@ -13,3 +13,9 @@ export function canEditSettings(role: MemberRole): boolean {
 export function canInviteCandidate(role: MemberRole): boolean {
   return role === "admin" || role === "hiring_manager";
 }
+
+// Creating/closing a role is part of the hiring workflow, same tier as
+// inviting a candidate — not a settings action.
+export function canManageRoles(role: MemberRole): boolean {
+  return role === "admin" || role === "hiring_manager";
+}

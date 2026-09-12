@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui";
-import { listAssessments, listPublishedTemplates } from "@/lib/db";
+import { listAssessments, listPublishedTemplates, listRoles } from "@/lib/db";
 import { canInviteCandidate } from "@/lib/permissions";
 import { getCurrentSession } from "@/lib/session";
 import { InviteCandidateForm } from "@/components/InviteCandidateForm";
-import { CandidatesTable } from "@/components/CandidatesTable";
+import { CandidatesByRole } from "@/components/CandidatesByRole";
 
 export const dynamic = "force-dynamic";
 
@@ -12,9 +12,10 @@ export default async function CandidatesPage() {
   const session = await getCurrentSession();
   if (!session) redirect("/login");
 
-  const [assessments, templates] = await Promise.all([
+  const [assessments, templates, roles] = await Promise.all([
     listAssessments(session.company.id),
     listPublishedTemplates(),
+    listRoles(session.company.id),
   ]);
 
   return (
@@ -22,13 +23,18 @@ export default async function CandidatesPage() {
       <PageHeader
         eyebrow="Roles & candidates"
         title="Candidates"
-        action={<InviteCandidateForm templates={templates} canInvite={canInviteCandidate(session.role)} />}
+        action={
+          <InviteCandidateForm
+            templates={templates}
+            roles={roles.filter((r) => r.status === "open")}
+            canInvite={canInviteCandidate(session.role)}
+          />
+        }
       >
-        Invite a candidate to run a published assessment for a role. This is where &ldquo;create a role&rdquo; and &ldquo;invite a
-        candidate&rdquo; happen in one step.
+        Grouped by role — invite a candidate to run a published assessment against an open role.
       </PageHeader>
 
-      <CandidatesTable assessments={assessments} />
+      <CandidatesByRole assessments={assessments} roles={roles} />
     </div>
   );
 }

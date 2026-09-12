@@ -5,12 +5,13 @@
 - **internal-admin/** — Mindfries-team ops portal. `frontend/` (Next.js) + `backend/` (FastAPI, to come).
 - **company/** — an earlier, partial scaffold of the company-facing Admin Portal.
   Superseded by **company-dashboard/** (below); left as-is, not merged or deleted.
-- **company-dashboard/** — the company-facing Admin Portal (PRD §1.4): invite
-  candidates, pick a published assessment, review status, manage the team, edit
-  settings. `frontend/` (Next.js) only — no separate backend, same `lib/db.ts`-over-
-  Supabase pattern as the other two. Real per-teammate Supabase Auth accounts
-  (not a shared login) and Resend-based invite emails, both provisioned the same
-  way `internal-admin`'s `onboardCompany` provisions the founding admin account.
+- **company-dashboard/** — the company-facing Admin Portal (PRD §1.4): create
+  roles, invite candidates against them, pick a published assessment, review
+  status (grouped by role), manage the team, edit settings. `frontend/`
+  (Next.js) only — no separate backend, same `lib/db.ts`-over-Supabase pattern
+  as the other two. Real per-teammate Supabase Auth accounts (not a shared
+  login) and Resend-based invite emails, both provisioned the same way
+  `internal-admin`'s `onboardCompany` provisions the founding admin account.
 
 ## Data & interaction (decision)
 **Supabase (Postgres) is the single system of record and the interaction layer.**
@@ -29,6 +30,12 @@ only), not `user_metadata`, so a signed-in company admin can't repoint their own
 - `supabase/migrations/0001_tracker.sql` — internal-admin lead/growth pipeline.
 - `supabase/migrations/0002_product.sql` — shared product schema: `companies`,
   `game_templates`, `assessments`, `sessions`.
+- `supabase/migrations/0003_roles.sql` — `roles` (PRD §1.4 Role Management: a
+  company hiring for several roles at once) and `assessments.role_id`, a
+  nullable FK to it. Purely additive: `assessments.role` (plain text) stays,
+  now denormalized from the role's title at invite time, so `candidate/frontend`
+  and `internal-admin` — which only ever read it as a display string — need no
+  changes.
 
 **FastAPI is for compute, not CRUD.** It earns its place only where Supabase
 can't: sandbox orchestration, the evaluation pipeline, and the Gemini Live

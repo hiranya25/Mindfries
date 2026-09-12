@@ -4,6 +4,8 @@ import type {
   Assessment,
   AssessmentSession,
   GameTemplate,
+  Role,
+  RoleStatus,
   TeamMember,
 } from "./types";
 
@@ -33,15 +35,77 @@ export async function listPublishedTemplates(): Promise<GameTemplate[]> {
   return (data ?? []).map(toTemplate);
 }
 
+function toRole(r: any): Role {
+  return {
+    id: r.id,
+    companyId: r.company_id,
+    title: r.title,
+    status: r.status,
+    requirements: r.requirements,
+    techStack: r.tech_stack ?? [],
+    createdAt: r.created_at,
+  };
+}
+
+export async function listRoles(companyId: string): Promise<Role[]> {
+  const c = db();
+  if (!c) return [];
+  const { data } = await c
+    .from("roles")
+    .select("*")
+    .eq("company_id", companyId)
+    .order("created_at", { ascending: false });
+  return (data ?? []).map(toRole);
+}
+
+export async function getRole(companyId: string, id: string): Promise<Role | null> {
+  const c = db();
+  if (!c) return null;
+  const { data } = await c.from("roles").select("*").eq("company_id", companyId).eq("id", id).single();
+  return data ? toRole(data) : null;
+}
+
+export async function createRole(input: {
+  companyId: string;
+  title: string;
+  requirements: string | null;
+  techStack: string[];
+}): Promise<string> {
+  const c = db();
+  if (!c) throw new Error("Supabase not configured");
+  const { data, error } = await c
+    .from("roles")
+    .insert({
+      company_id: input.companyId,
+      title: input.title,
+      requirements: input.requirements,
+      tech_stack: input.techStack,
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data.id as string;
+}
+
+export async function setRoleStatus(companyId: string, id: string, status: RoleStatus): Promise<void> {
+  const c = db();
+  if (!c) throw new Error("Supabase not configured");
+  const { error } = await c.from("roles").update({ status }).eq("company_id", companyId).eq("id", id);
+  if (error) throw error;
+}
+
 function toAssessment(r: any): Assessment {
   return {
     id: r.id,
     companyId: r.company_id,
     templateId: r.template_id,
     templateName: r.game_templates?.name ?? null,
+    roleId: r.role_id,
+    // Prefer the live role title (renames stay reflected); fall back to the
+    // legacy free-text column for rows written before roles existed.
+    role: r.roles?.title ?? r.role,
     candidateName: r.candidate_name,
     candidateEmail: r.candidate_email,
-    role: r.role,
     status: r.status,
     dueDate: r.due_date,
     matchScore: r.match_score,
@@ -54,7 +118,7 @@ export async function listAssessments(companyId: string): Promise<Assessment[]> 
   if (!c) return [];
   const { data } = await c
     .from("assessments")
-    .select("*, game_templates(name)")
+    .select("*, game_templates(name), roles(title, status)")
     .eq("company_id", companyId)
     .order("created_at", { ascending: false });
   return (data ?? []).map(toAssessment);
@@ -65,7 +129,7 @@ export async function getAssessment(companyId: string, id: string): Promise<Asse
   if (!c) return null;
   const { data } = await c
     .from("assessments")
-    .select("*, game_templates(name)")
+    .select("*, game_templates(name), roles(title, status)")
     .eq("company_id", companyId)
     .eq("id", id)
     .single();
@@ -77,7 +141,8 @@ export async function createAssessment(input: {
   templateId: string;
   candidateName: string;
   candidateEmail: string;
-  role: string;
+  roleId: string;
+  roleTitle: string;
   dueDate: string | null;
 }): Promise<void> {
   const c = db();
@@ -87,7 +152,11 @@ export async function createAssessment(input: {
     template_id: input.templateId,
     candidate_name: input.candidateName,
     candidate_email: input.candidateEmail,
-    role: input.role,
+    role_id: input.roleId,
+    // Denormalized copy of the role's title at invite time, so
+    // candidate/frontend's display (which reads this column directly) keeps
+    // working even if the role is later renamed or closed.
+    role: input.roleTitle,
     due_date: input.dueDate,
   });
   if (error) throw error;

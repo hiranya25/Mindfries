@@ -17,6 +17,8 @@ describe("lib/db degrade-when-unconfigured behavior", () => {
     await expect(db.listAssessments("company-1")).resolves.toEqual([]);
     await expect(db.getAssessment("company-1", "assessment-1")).resolves.toBeNull();
     await expect(db.listSessionsForCompany("company-1")).resolves.toEqual([]);
+    await expect(db.listRoles("company-1")).resolves.toEqual([]);
+    await expect(db.getRole("company-1", "role-1")).resolves.toBeNull();
   });
 
   it("mutations throw a clear error instead of silently no-op-ing", async () => {
@@ -27,7 +29,8 @@ describe("lib/db degrade-when-unconfigured behavior", () => {
         templateId: "template-1",
         candidateName: "Jordan",
         candidateEmail: "jordan@example.com",
-        role: "Backend Engineer",
+        roleId: "role-1",
+        roleTitle: "Backend Engineer",
         dueDate: null,
       })
     ).rejects.toThrow("Supabase not configured");
@@ -39,5 +42,9 @@ describe("lib/db degrade-when-unconfigured behavior", () => {
       "Supabase not configured"
     );
     await expect(db.deleteTeammateAccount("auth-user-1")).rejects.toThrow("Supabase not configured");
+    await expect(
+      db.createRole({ companyId: "company-1", title: "Backend Engineer", requirements: null, techStack: [] })
+    ).rejects.toThrow("Supabase not configured");
+    await expect(db.setRoleStatus("company-1", "role-1", "closed")).rejects.toThrow("Supabase not configured");
   });
 });

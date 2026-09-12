@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PageHeader, Pill, StatCard } from "@/components/ui";
 import { fmtDate } from "@/lib/format";
 import { assessmentStatusTone, assessmentStatusLabel } from "@/lib/format";
-import { listAssessments } from "@/lib/db";
+import { listAssessments, listRoles } from "@/lib/db";
 import { getCurrentSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -12,10 +12,14 @@ export default async function OverviewPage() {
   const session = await getCurrentSession();
   if (!session) redirect("/login");
 
-  const assessments = await listAssessments(session.company.id);
+  const [assessments, roles] = await Promise.all([
+    listAssessments(session.company.id),
+    listRoles(session.company.id),
+  ]);
   const inProgress = assessments.filter((a) => a.status === "in_progress").length;
   const readyForReview = assessments.filter((a) => a.status === "submitted").length;
   const closed = assessments.filter((a) => a.status === "closed").length;
+  const openRoles = roles.filter((r) => r.status === "open").length;
   const recent = assessments.slice(0, 6);
 
   return (
@@ -24,7 +28,8 @@ export default async function OverviewPage() {
         Every candidate you&apos;ve invited, at a glance.
       </PageHeader>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+        <StatCard label="Open roles" value={openRoles} />
         <StatCard label="Active candidates" value={assessments.length - closed} />
         <StatCard label="In progress" value={inProgress} />
         <StatCard label="Ready for review" value={readyForReview} />

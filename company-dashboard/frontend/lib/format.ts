@@ -1,4 +1,4 @@
-import type { AssessmentStatus, CompanyStatus, Plan, SessionStatus, TaskVariant, TemplateStatus } from "./types";
+import type { AssessmentStatus, CompanyStatus, Plan, RoleStatus, SessionStatus, TaskVariant, TemplateStatus } from "./types";
 
 export type Tone = "violet" | "coral" | "green" | "amber" | "gray";
 
@@ -39,6 +39,16 @@ export const assessmentStatusTone: Record<AssessmentStatus, Tone> = {
   in_progress: "violet",
   submitted: "amber",
   closed: "green",
+};
+
+export const roleStatusLabel: Record<RoleStatus, string> = {
+  open: "Open",
+  closed: "Closed",
+};
+
+export const roleStatusTone: Record<RoleStatus, Tone> = {
+  open: "green",
+  closed: "gray",
 };
 
 export const sessionTone: Record<SessionStatus, Tone> = {
