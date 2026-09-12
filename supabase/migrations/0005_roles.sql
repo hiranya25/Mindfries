@@ -3,8 +3,12 @@
 -- previously "role" on an assessment was only a free-text string. This adds
 -- a real roles table and a nullable FK from assessments — it does not
 -- rename or drop assessments.role, which candidate/frontend and
--- internal-admin still read as a plain display string. Apply after
--- 0002_product.sql in the officemindfries Supabase project.
+-- internal-admin still read as a plain display string.
+--
+-- Only depends on 0002_product.sql (companies, assessments) — unrelated to
+-- 0003_targets.sql / 0004_admin_users.sql, just numbered after them since
+-- those landed first. Apply after 0004_admin_users.sql in the
+-- officemindfries Supabase project.
 
 create table if not exists roles (
   id           uuid primary key default gen_random_uuid(),

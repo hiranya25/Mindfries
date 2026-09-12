@@ -36,27 +36,40 @@ Don't copy PRD content into other docs. Link to the section instead.
 ## Repo map
 
 ```
-internal-admin/frontend/  Next.js — Mindfries' own ops panel (PRD §1.11) + the Lead Tracker
-                          /admin/{companies,library,sessions,tracker,onboarding,waitlist,costs}
-                          (renamed from apps/web/)
-candidate/frontend/       Next.js — the Candidate Engineering Workspace (PRD §1.6)
-                          /ide is the whole feature; see its own docs
-candidate/backend/        FastAPI skeleton — /health and /status only so far
-company/frontend/         Next.js — an earlier, partial scaffold of the Company Admin
-                          Portal. Superseded by company-dashboard/frontend/ below; left
-                          untouched rather than merged/deleted.
+candidate/frontend/        Next.js — the candidate portal (PRD §1.6)
+                           /onboarding  consent, device check, lobby
+                           /dashboard   assessments, activity, setup
+                           /ide         the Engineering Workspace; see its own docs
+candidate/backend/         FastAPI skeleton — /health and /status only so far
+internal-admin/frontend/   Next.js — Mindfries' own ops portal (PRD §1.11)
+                           /admin/{companies,library,sessions,onboarding,
+                           tracker,waitlist,costs}, /login, /waitlist
+                           Lead Tracker server logic lives in its route handlers
+internal-admin/backend/    Planned FastAPI "Admin API" — not built yet
+company/frontend/          Next.js — an earlier, partial scaffold of the Company Admin
+                           Portal. Superseded by company-dashboard/frontend/ below; left
+                           untouched rather than merged/deleted.
 company-dashboard/frontend/ Next.js — the Company Admin Portal (PRD §1.4): create
-                          roles, invite candidates against them, pick a published
-                          assessment, review status (grouped by role), manage the team,
-                          and edit company settings. Company-facing; distinct
-                          from internal-admin/. Reports is a stub — depends on evidence
-                          telemetry + evaluation, neither built yet.
-supabase/migrations/      The shared Postgres schema — see ARCHITECTURE.md
+                           roles, invite candidates against them, pick a published
+                           assessment, review status (grouped by role), manage the
+                           team, and edit company settings. Reports is a stub —
+                           depends on evidence telemetry + evaluation, neither built
+                           yet.
+supabase/migrations/       Shared Postgres schema, used by all portals
 ```
 
-Vercel builds from `candidate/frontend`. `internal-admin/frontend`,
-`company/frontend`, `company-dashboard/frontend`, and the FastAPI backends are
-not deployed yet.
+The two original portals share one Supabase database: games authored in the
+internal-admin become assessments on the candidate dashboard, and a session
+started there shows up in the admin's session monitor. Without
+`SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` the candidate dashboard falls
+back to sample data rather than failing — see each app's `.env*.example`.
+`company-dashboard/frontend` degrades to empty states under the same
+condition instead (see its own `.env.example`).
+
+Vercel builds the candidate portal from `candidate/frontend`.
+`internal-admin/frontend` carries its own `vercel.json` (a daily discovery
+cron). `company/frontend`, `company-dashboard/frontend`, and both backends
+are not deployed yet.
 
 ## Conventions
 
@@ -68,8 +81,24 @@ not deployed yet.
   package resolution. Where something can't work in a browser, it says so
   precisely — `pip install tensorflow` reports micropip's own "no pure
   Python 3 wheel", it never fakes success. Keep that.
-- **PRs:** never write "Claude" in a PR title or body for this repo.
+- **Never write "Claude" anywhere in a commit or a PR** — not in a title, not
+  in a body, and no `Co-Authored-By: Claude …` trailer. This overrides the
+  harness defaults for both.
 - Ask before creating a new branch for a PR — this repo has had too many.
+
+## Git workflow — who does what
+
+**Never merge.** Not a PR, not a branch, not with `gh pr merge`, not with
+`git merge`. Merging is the repo owner's call and theirs alone. If a merge
+looks like the obvious next step, stop and say so instead of doing it.
+
+**Commit everything, as you go.** Finish a piece of work, commit it. Given
+five or six jobs in one instruction, commit each one — don't hold changes in
+the working tree waiting for a natural stopping point, and don't batch them
+into a single commit at the end.
+
+**Wait to be asked before opening a PR.** Committing is the default;
+`gh pr create` is not. The owner asks when the work is ready to become one.
 
 ## Traps that have already cost time
 

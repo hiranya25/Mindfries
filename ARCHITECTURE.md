@@ -30,10 +30,17 @@ only), not `user_metadata`, so a signed-in company admin can't repoint their own
 - `supabase/migrations/0001_tracker.sql` — internal-admin lead/growth pipeline.
 - `supabase/migrations/0002_product.sql` — shared product schema: `companies`,
   `game_templates`, `assessments`, `sessions`.
-- `supabase/migrations/0003_roles.sql` — `roles` (PRD §1.4 Role Management: a
+- `supabase/migrations/0003_targets.sql` — internal-admin's hand-picked
+  target companies (`target_companies`/`target_contacts`/`target_activities`),
+  distinct from `0001`'s crawled `leads`.
+- `supabase/migrations/0004_admin_users.sql` — who may sign into
+  internal-admin (`admin_users`, scrypt-hashed passwords).
+- `supabase/migrations/0005_roles.sql` — `roles` (PRD §1.4 Role Management: a
   company hiring for several roles at once) and `assessments.role_id`, a
-  nullable FK to it. Purely additive: `assessments.role` (plain text) stays,
-  now denormalized from the role's title at invite time, so `candidate/frontend`
+  nullable FK to it. Only depends on `0002`, numbered after `0003`/`0004`
+  because those landed first, not because of any dependency on them. Purely
+  additive: `assessments.role` (plain text) stays, now denormalized from the
+  role's title at invite time, so `candidate/frontend`
   and `internal-admin` — which only ever read it as a display string — need no
   changes.
 
