@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "./supabase";
-import type { ApplicationStage, AssessmentReport, CandidateApplication, CandidateReport, JobRole, RoleVisibility, SessionSummary, StageCounts } from "./types";
+import type { ApplicationStage, AssessmentReport, CandidateApplication, CandidateReport, DueCandidate, JobRole, RoleVisibility, SessionSummary, StageCounts } from "./types";
 
 // Data access for the Company Portal. Every read returns [] when Supabase
 // isn't wired yet, so pages render empty states instead of crashing
@@ -285,4 +285,35 @@ export async function getCandidateReport(assessmentId: string | null): Promise<C
   };
 
   return { session, report };
+}
+
+/**
+ * Every candidate with a real due date on their assessment — the Overview
+ * calendar widget's data. `assessments.due_date` is set at invite time
+ * (inviteCandidateToRole passes it straight through); joined here rather
+ * than added to candidate_applications, since the due date belongs to the
+ * assessment record, not the pipeline row. Sorted in JS rather than via a
+ * nested-column `.order()` — small volumes at MVP scale, and Supabase's
+ * embedded-resource ordering only reliably covers the base table's own
+ * columns.
+ */
+export async function listUpcomingDueDates(companyId: string): Promise<DueCandidate[]> {
+  const c = db();
+  if (!c) return [];
+  const { data } = await c
+    .from("candidate_applications")
+    .select("id, candidate_name, candidate_email, job_roles!inner(title, company_id), assessments!inner(due_date)")
+    .eq("job_roles.company_id", companyId)
+    .not("assessments.due_date", "is", null);
+
+  return (data ?? [])
+    .map((r: any) => ({
+      applicationId: r.id,
+      candidateName: r.candidate_name ?? null,
+      candidateEmail: r.candidate_email,
+      roleTitle: r.job_roles?.title ?? "—",
+      dueDate: r.assessments?.due_date as string,
+    }))
+    .filter((d) => !!d.dueDate)
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
 }

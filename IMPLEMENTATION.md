@@ -303,8 +303,18 @@ redesign.
 ### Phase 2 — Overview + Pipeline (done, except where noted)
 - **Overview (real):** all four PRD §1.4 stat cards (Active Roles,
   Candidates in Progress, Completed Assessments, Ready for Review) read
-  real counts from `job_roles`/`candidate_applications`. Recent Activity
-  (O5) is still outstanding — there's no activity-feed read built yet.
+  real counts from `job_roles`/`candidate_applications`.
+- **Overview widgets (real, pulled forward):** a weekly invite trend chart,
+  a 13-week invite-activity heatmap, a due-dates calendar (from
+  `assessments.due_date`) with an upcoming list, and **Recent Activity
+  (O5)** — merged role-creation + invite events sorted by time, closing the
+  one PRD Overview item that had been outstanding since Phase 1. No new
+  event log: the activity feed is derived from the `created_at` these
+  records already carry, so stage changes (no timestamped history yet)
+  don't appear in it. `lib/overview.ts`'s sparkline/bucket math is copied
+  from internal-admin's own (`cumulative`/`perBucket`/`sparkPaths`/`ago`) —
+  same reasoning as everywhere else, no invented numbers, only real
+  timestamps turned into a shape.
 - **Stage filter (real):** `/roles` and `/roles/[roleId]` share one
   stage-count-badge-as-link component behavior — clicking a badge
   deep-links to `/roles/[roleId]?stage=X`, matching §9's original design.
