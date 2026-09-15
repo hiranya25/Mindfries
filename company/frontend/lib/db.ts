@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "./supabase";
-import type { AssessmentReport, CandidateApplication, CandidateReport, JobRole, RoleVisibility, SessionSummary, StageCounts } from "./types";
+import type { ApplicationStage, AssessmentReport, CandidateApplication, CandidateReport, JobRole, RoleVisibility, SessionSummary, StageCounts } from "./types";
 
 // Data access for the Company Portal. Every read returns [] when Supabase
 // isn't wired yet, so pages render empty states instead of crashing
@@ -199,6 +199,22 @@ export async function listApplicationsForCompany(companyId: string): Promise<Can
     .eq("job_roles.company_id", companyId)
     .order("created_at", { ascending: false });
   return (data ?? []).map((r: any) => ({ ...toApplication(r), roleTitle: r.job_roles?.title ?? "—" }));
+}
+
+/**
+ * Moves a candidate to a new pipeline stage — Phase 2's per-candidate
+ * version of the original plan's "bulk actions"; a multi-select bulk-action
+ * bar is still outstanding, this is one candidate at a time. Scoped through
+ * job_roles the same way every other write here is, so a request can't move
+ * a candidate that belongs to a different company's role.
+ */
+export async function setApplicationStage(companyId: string, applicationId: string, stage: ApplicationStage): Promise<void> {
+  const c = db();
+  if (!c) throw new Error("Supabase not configured");
+  const existing = await getApplicationForCompany(companyId, applicationId);
+  if (!existing) throw new Error("Candidate not found");
+  const { error } = await c.from("candidate_applications").update({ stage }).eq("id", applicationId);
+  if (error) throw error;
 }
 
 /** One candidate's detail page — scoped through job_roles so one company can never open another's candidate by id. */

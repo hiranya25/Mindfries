@@ -300,12 +300,22 @@ redesign.
   has something to show. No email sent to the candidate — matches
   internal-admin's own invite action, which doesn't send one either.
 
-### Phase 2 — Overview + Pipeline
-- Overview: candidates-in-pipeline / pending-review widgets once
-  `candidate_applications` has real rows (active-roles count already real)
-- `/roles/[roleId]` pipeline: filters (stage, score, date), bulk actions
-  (invite, shortlist, reject)
-- Permission checks (§10) wired into every remaining write action
+### Phase 2 — Overview + Pipeline (done, except where noted)
+- **Overview (real):** all four PRD §1.4 stat cards (Active Roles,
+  Candidates in Progress, Completed Assessments, Ready for Review) read
+  real counts from `job_roles`/`candidate_applications`. Recent Activity
+  (O5) is still outstanding — there's no activity-feed read built yet.
+- **Stage filter (real):** `/roles` and `/roles/[roleId]` share one
+  stage-count-badge-as-link component behavior — clicking a badge
+  deep-links to `/roles/[roleId]?stage=X`, matching §9's original design.
+- **Per-candidate stage actions (real, narrower than "bulk"):** Shortlist /
+  Hire / Reject buttons on each row in `/roles/[roleId]`, permission-gated
+  via `candidate:stage`, each a plain `<form action={changeStage.bind(...)}>`
+  — no client component needed. **Not built:** multi-select (checkboxes +
+  a bulk-action bar) — every change is still one candidate at a time.
+- Score-range and date filters on the pipeline view — not built.
+- Permission checks (§10) wired into every write action added so far
+  (`role:write`, `candidate:invite`, `candidate:stage`).
 
 ### Phase 3 — Candidate Detail + Assessment Integration
 - **Candidate report view (real, pulled forward):** `/candidates/[candidateId]`

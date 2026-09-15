@@ -1,21 +1,24 @@
 import { currentCompanyUser } from "@/lib/auth/company-users";
-import { listJobRoles } from "@/lib/db";
+import { listApplicationsForCompany, listJobRoles, type CandidateApplicationWithRole } from "@/lib/db";
 import { supabaseReady } from "@/lib/supabase";
 import { EmptyState, LinkButton, PageHeader, StatCard } from "@/components/ui";
+import type { JobRole } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Overview — Phase 2 (IMPLEMENTATION.md §11) fills this in with candidates-
- * in-pipeline / pending-review widgets once candidate_applications has real
- * rows (role creation itself is real already — see /roles/new). Real
- * counts, not sample data standing in for them — this app's own version of
- * the "real, or an honest failure" rule.
- */
+/** Overview — the four stat cards from PRD §1.4's Overview section (O1–O4); Recent Activity (O5) is still outstanding. */
 export default async function OverviewPage() {
   const user = await currentCompanyUser();
-  const roles = supabaseReady() && user ? await listJobRoles(user.companyId) : [];
+  let roles: JobRole[] = [];
+  let applications: CandidateApplicationWithRole[] = [];
+  if (supabaseReady() && user) {
+    [roles, applications] = await Promise.all([listJobRoles(user.companyId), listApplicationsForCompany(user.companyId)]);
+  }
+
   const openRoles = roles.filter((r) => r.status === "open");
+  const inProgress = applications.filter((a) => a.stage === "invited" || a.stage === "in_progress");
+  const completed = applications.filter((a) => a.stage !== "invited" && a.stage !== "in_progress");
+  const readyForReview = applications.filter((a) => a.stage === "completed");
 
   return (
     <div className="space-y-6">
@@ -23,10 +26,11 @@ export default async function OverviewPage() {
         Active roles, candidates in your pipeline, and what needs your review.
       </PageHeader>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Active Roles" value={openRoles.length} />
-        <StatCard label="Candidates in Progress" value={0} hint="Wired once candidate_applications has rows" />
-        <StatCard label="Ready for Review" value={0} hint="Completed but not yet shortlisted or rejected" />
+        <StatCard label="Candidates in Progress" value={inProgress.length} />
+        <StatCard label="Completed Assessments" value={completed.length} />
+        <StatCard label="Ready for Review" value={readyForReview.length} hint="Completed but not yet shortlisted or rejected" />
       </div>
 
       {roles.length === 0 && (
