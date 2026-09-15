@@ -6,6 +6,7 @@
 // how you get a working login for local dev without setting one up.
 //
 //   npx --yes tsx scripts/company-user.mts companies
+//   npx --yes tsx scripts/company-user.mts add-company "<Name>"
 //   npx --yes tsx scripts/company-user.mts list [--company <companyId>]
 //   npx --yes tsx scripts/company-user.mts add    <email> "<Full Name>" --company <companyId> [--role recruiter|viewer]
 //   npx --yes tsx scripts/company-user.mts passwd <email>
@@ -85,10 +86,21 @@ async function main() {
     if (cmd === "companies") {
       const { rows } = await client.query("select id, name, status from companies order by created_at desc");
       if (rows.length === 0) {
-        console.log("(no rows in companies — create one first, e.g. via internal-admin's Companies page)");
+        console.log('(no rows in companies — create one with: add-company "<Name>")');
         return;
       }
       for (const r of rows) console.log(`${r.id}  ${String(r.name).padEnd(30)} ${r.status}`);
+      return;
+    }
+
+    if (cmd === "add-company") {
+      const name = (emailArg ?? "").trim(); // reused positional slot, not actually an email here
+      if (!name) throw new Error('Give a name: add-company "<Name>"');
+      const { rows } = await client.query(
+        "insert into companies (name, status) values ($1, 'active') returning id",
+        [name],
+      );
+      console.log(`ok — ${rows[0].id}  ${name}`);
       return;
     }
 
@@ -148,7 +160,7 @@ async function main() {
     }
 
     throw new Error(
-      'Commands: companies | list [--company <id>] | add <email> "<Name>" --company <id> [--role recruiter|viewer] | passwd <email> | disable <email> | enable <email>',
+      'Commands: companies | add-company "<Name>" | list [--company <id>] | add <email> "<Name>" --company <id> [--role recruiter|viewer] | passwd <email> | disable <email> | enable <email>',
     );
   } finally {
     await client.end();
