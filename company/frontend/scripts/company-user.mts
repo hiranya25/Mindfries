@@ -40,21 +40,22 @@ function loadEnv() {
   }
 }
 
-/** Read a line with the terminal's echo turned off. */
+/**
+ * Read a line, visibly. internal-admin's own scripts/admin.mts mutes echo
+ * for this same prompt against real admin passwords; this script only ever
+ * sets throwaway local-dev credentials, so plain visible input — which
+ * doesn't depend on readline's terminal-mode handling working a particular
+ * way in every shell/terminal emulator — is the more reliable trade here.
+ */
 function askSecret(prompt: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const stdin = process.stdin;
-    if (!stdin.isTTY) {
+    if (!process.stdin.isTTY) {
       reject(new Error("A terminal is required to type a password (stdin is not a TTY)."));
       return;
     }
-    const rl = createInterface({ input: stdin, output: process.stdout, terminal: true });
-    process.stdout.write(prompt);
-    const out = rl as unknown as { output: NodeJS.WriteStream; _writeToOutput: (s: string) => void };
-    out._writeToOutput = () => {};
-    rl.question("", (answer) => {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    rl.question(prompt, (answer) => {
       rl.close();
-      process.stdout.write("\n");
       resolve(answer);
     });
   });
