@@ -24,16 +24,19 @@ export function ActivityHeatmap({ createdAtDates, asOf }: { createdAtDates: stri
   const counts = perBucket(createdAtDates, asOf, DAYS, DAY);
   const max = Math.max(...counts, 0);
 
-  // Pad to a full week (Sun..Sat) so the grid aligns to real weekdays.
+  // UTC throughout — grid alignment and label must agree on which weekday
+  // a bucket falls on, and picking one fixed zone (rather than the
+  // server's local one) keeps that agreement independent of where this
+  // happens to run.
   const dates = counts.map((_, i) => new Date(asOf.getTime() - (DAYS - 1 - i) * DAY));
-  const leadingBlanks = dates[0].getDay(); // 0 = Sunday
+  const leadingBlanks = dates[0].getUTCDay(); // 0 = Sunday
   const cells: { date: Date | null; count: number }[] = [
     ...Array.from({ length: leadingBlanks }, () => ({ date: null, count: 0 })),
     ...dates.map((date, i) => ({ date, count: counts[i] })),
   ];
   const weeks = Math.ceil(cells.length / 7);
 
-  const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 
   return (
     <div className="p-5">

@@ -4,8 +4,14 @@ import type { DueCandidate } from "@/lib/types";
 
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 
+// Builds the key from the Date's own local fields — not `toISOString()`,
+// which converts to UTC and can shift the calendar day depending on the
+// server's local timezone offset. `dueDate` comes from a Postgres `date`
+// column (no time, no timezone) as a plain "YYYY-MM-DD" string, so the key
+// for a locally-constructed calendar cell must match that literally, not a
+// UTC-shifted version of it.
 function toKey(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 /**

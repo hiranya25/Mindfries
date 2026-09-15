@@ -18,7 +18,7 @@ export function TrendChart({ createdAtDates, asOf }: { createdAtDates: string[];
   const total = values.reduce((a, b) => a + b, 0);
 
   const weekStart = (i: number) => new Date(asOf.getTime() - (WEEKS - 1 - i) * WEEK);
-  const fmtWeek = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const fmtWeek = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 
   return (
     <div className="p-5">
