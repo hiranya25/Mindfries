@@ -8,8 +8,9 @@ const nav = [
   { href: "/", label: "Overview", icon: "◆" },
   { href: "/roles", label: "Roles", icon: "▧" },
   { href: "/candidates", label: "Candidates", icon: "▦" },
-  { href: "/team", label: "Team", icon: "◈" },
+  { href: "/assessments", label: "Assessments", icon: "▤" },
   { href: "/reports", label: "Reports", icon: "◉" },
+  { href: "/team", label: "Team", icon: "◈" },
   { href: "/settings", label: "Settings", icon: "⚙" },
 ];
 

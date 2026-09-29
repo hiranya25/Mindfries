@@ -12,14 +12,21 @@ export function InviteCandidateForm({
   templates,
   roles,
   canInvite,
+  defaultTemplateId,
+  triggerLabel = "+ Invite candidate",
 }: {
   templates: GameTemplate[];
   roles: Role[];
   canInvite: boolean;
+  // Preselects a template — e.g. opened from a specific card on the
+  // Assessments page rather than the general Candidates page. Still just a
+  // default: the dropdown below lets you change it.
+  defaultTemplateId?: string;
+  triggerLabel?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [templateId, setTemplateId] = useState(templates[0]?.id ?? "");
+  const [templateId, setTemplateId] = useState(defaultTemplateId ?? templates[0]?.id ?? "");
   const [roleId, setRoleId] = useState(roles[0]?.id ?? "");
   const [candidateName, setCandidateName] = useState("");
   const [candidateEmail, setCandidateEmail] = useState("");
@@ -66,7 +73,7 @@ export function InviteCandidateForm({
         <div className="mb-4 rounded-lg border border-hair bg-accent-soft px-4 py-3 text-sm text-dim">{notice}</div>
       )}
       <Button onClick={() => setOpen(true)} disabled={!!blocked}>
-        + Invite candidate
+        {triggerLabel}
       </Button>
 
       <Modal
