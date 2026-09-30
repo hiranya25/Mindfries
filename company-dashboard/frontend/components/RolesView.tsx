@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Chip, Field, Input, Modal, Pill, Textarea } from "@/components/ui";
-import { createRoleAction, setRoleStatusAction } from "@/app/(portal)/actions";
+import { Button, Chip, Field, Input, Modal, Pill, Select, Textarea } from "@/components/ui";
+import { createRoleAction, setRoleStatusAction, setRoleTemplateAction } from "@/app/(portal)/actions";
 import { roleStatusLabel, roleStatusTone } from "@/lib/format";
-import type { Role } from "@/lib/types";
+import type { GameTemplate, Role } from "@/lib/types";
 
 export interface RoleCounts {
   inProgress: number;
@@ -17,10 +17,12 @@ export interface RoleCounts {
 export function RolesView({
   roles,
   counts,
+  templates,
   canManage,
 }: {
   roles: Role[];
   counts: Record<string, RoleCounts>;
+  templates: GameTemplate[];
   canManage: boolean;
 }) {
   const router = useRouter();
@@ -28,6 +30,7 @@ export function RolesView({
   const [title, setTitle] = useState("");
   const [requirements, setRequirements] = useState("");
   const [techStack, setTechStack] = useState("");
+  const [templateId, setTemplateId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -35,7 +38,7 @@ export function RolesView({
   async function submit() {
     setLoading(true);
     setError(null);
-    const res = await createRoleAction({ title, requirements, techStack });
+    const res = await createRoleAction({ title, requirements, techStack, templateId });
     setLoading(false);
     if (!res.ok) {
       setError(res.error);
@@ -44,6 +47,7 @@ export function RolesView({
     setTitle("");
     setRequirements("");
     setTechStack("");
+    setTemplateId("");
     setOpen(false);
     router.refresh();
   }
@@ -51,6 +55,13 @@ export function RolesView({
   async function toggleStatus(role: Role) {
     setPendingId(role.id);
     await setRoleStatusAction(role.id, role.status === "open" ? "closed" : "open");
+    setPendingId(null);
+    router.refresh();
+  }
+
+  async function changeTemplate(role: Role, newTemplateId: string) {
+    setPendingId(role.id);
+    await setRoleTemplateAction(role.id, newTemplateId);
     setPendingId(null);
     router.refresh();
   }
@@ -92,6 +103,28 @@ export function RolesView({
                   </Button>
                 )}
               </div>
+
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wide text-faint">Default assessment</span>
+                {canManage ? (
+                  <Select
+                    value={role.templateId ?? ""}
+                    onChange={(e) => changeTemplate(role, e.target.value)}
+                    disabled={pendingId === role.id}
+                    className="w-auto max-w-xs py-1 text-xs"
+                  >
+                    <option value="">None — pick at invite time</option>
+                    {templates.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </Select>
+                ) : (
+                  <span className="text-sm text-dim">{role.templateName ?? "None — pick at invite time"}</span>
+                )}
+              </div>
+
               <div className="mt-4 flex flex-wrap gap-4 text-sm text-dim">
                 <span>{c.total} invited</span>
                 <span>{c.inProgress} in progress</span>
@@ -138,6 +171,16 @@ export function RolesView({
           </Field>
           <Field label="Tech stack" hint="Comma-separated, optional">
             <Input value={techStack} onChange={(e) => setTechStack(e.target.value)} placeholder="Python, PostgreSQL, Kafka" />
+          </Field>
+          <Field label="Default assessment" hint="Optional — pre-selects this template when inviting against the role">
+            <Select value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+              <option value="">None — pick at invite time</option>
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </Select>
           </Field>
           {error && <p className="text-sm font-semibold text-[#f4502f]">{error}</p>}
         </div>

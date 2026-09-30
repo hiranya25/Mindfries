@@ -43,6 +43,10 @@ only), not `user_metadata`, so a signed-in company admin can't repoint their own
   role's title at invite time, so `candidate/frontend`
   and `internal-admin` — which only ever read it as a display string — need no
   changes.
+- `supabase/migrations/0006_role_template.sql` — `roles.template_id`, a
+  nullable FK to `game_templates` (PRD §1.4 R4 Assessment Configuration): a
+  role's preferred published template, pre-selected but always overridable
+  at invite time.
 
 **FastAPI is for compute, not CRUD.** It earns its place only where Supabase
 can't: sandbox orchestration, the evaluation pipeline, and the Gemini Live

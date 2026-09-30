@@ -9,6 +9,7 @@ import {
   deleteTeammateAccount,
   getRole,
   setRoleStatus,
+  setRoleTemplate,
   updateCompanyProfile,
   updateCompanyTeam,
 } from "@/lib/db";
@@ -92,6 +93,7 @@ export async function createRoleAction(input: {
   title: string;
   requirements: string;
   techStack: string;
+  templateId: string;
 }): Promise<Result> {
   try {
     const session = await getCurrentSession();
@@ -106,7 +108,13 @@ export async function createRoleAction(input: {
       .filter(Boolean)
       .slice(0, 20);
 
-    await createRole({ companyId: session.company.id, title: input.title.trim(), requirements, techStack });
+    await createRole({
+      companyId: session.company.id,
+      title: input.title.trim(),
+      requirements,
+      techStack,
+      templateId: input.templateId || null,
+    });
     revalidatePath("/roles");
     revalidatePath("/candidates");
     return { ok: true };
@@ -124,6 +132,22 @@ export async function setRoleStatusAction(id: string, status: RoleStatus): Promi
     await setRoleStatus(session.company.id, id, status);
     revalidatePath("/roles");
     revalidatePath("/candidates");
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+// R4 Assessment Configuration — change a role's preferred template after
+// creation. templateId "" clears it (no default).
+export async function setRoleTemplateAction(id: string, templateId: string): Promise<Result> {
+  try {
+    const session = await getCurrentSession();
+    if (!session) throw new Error("Not signed in");
+    if (!canManageRoles(session.role)) throw new Error("You don't have permission to manage roles");
+
+    await setRoleTemplate(session.company.id, id, templateId || null);
+    revalidatePath("/roles");
     return { ok: true };
   } catch (e) {
     return fail(e);

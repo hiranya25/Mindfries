@@ -43,8 +43,15 @@ describe("lib/db degrade-when-unconfigured behavior", () => {
     );
     await expect(db.deleteTeammateAccount("auth-user-1")).rejects.toThrow("Supabase not configured");
     await expect(
-      db.createRole({ companyId: "company-1", title: "Backend Engineer", requirements: null, techStack: [] })
+      db.createRole({
+        companyId: "company-1",
+        title: "Backend Engineer",
+        requirements: null,
+        techStack: [],
+        templateId: null,
+      })
     ).rejects.toThrow("Supabase not configured");
     await expect(db.setRoleStatus("company-1", "role-1", "closed")).rejects.toThrow("Supabase not configured");
+    await expect(db.setRoleTemplate("company-1", "role-1", "template-1")).rejects.toThrow("Supabase not configured");
   });
 });

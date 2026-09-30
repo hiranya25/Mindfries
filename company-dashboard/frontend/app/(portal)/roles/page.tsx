@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui";
-import { listAssessments, listRoles } from "@/lib/db";
+import { listAssessments, listPublishedTemplates, listRoles } from "@/lib/db";
 import { canManageRoles } from "@/lib/permissions";
 import { getCurrentSession } from "@/lib/session";
 import { RolesView, type RoleCounts } from "@/components/RolesView";
@@ -11,9 +11,10 @@ export default async function RolesPage() {
   const session = await getCurrentSession();
   if (!session) redirect("/login");
 
-  const [roles, assessments] = await Promise.all([
+  const [roles, assessments, templates] = await Promise.all([
     listRoles(session.company.id),
     listAssessments(session.company.id),
+    listPublishedTemplates(),
   ]);
 
   const counts: Record<string, RoleCounts> = {};
@@ -34,7 +35,7 @@ export default async function RolesPage() {
         What you&apos;re hiring for right now — create a role, then invite candidates against it.
       </PageHeader>
 
-      <RolesView roles={roles} counts={counts} canManage={canManageRoles(session.role)} />
+      <RolesView roles={roles} counts={counts} templates={templates} canManage={canManageRoles(session.role)} />
     </div>
   );
 }

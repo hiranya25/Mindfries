@@ -43,6 +43,8 @@ function toRole(r: any): Role {
     status: r.status,
     requirements: r.requirements,
     techStack: r.tech_stack ?? [],
+    templateId: r.template_id,
+    templateName: r.game_templates?.name ?? null,
     createdAt: r.created_at,
   };
 }
@@ -52,7 +54,7 @@ export async function listRoles(companyId: string): Promise<Role[]> {
   if (!c) return [];
   const { data } = await c
     .from("roles")
-    .select("*")
+    .select("*, game_templates(name)")
     .eq("company_id", companyId)
     .order("created_at", { ascending: false });
   return (data ?? []).map(toRole);
@@ -61,7 +63,12 @@ export async function listRoles(companyId: string): Promise<Role[]> {
 export async function getRole(companyId: string, id: string): Promise<Role | null> {
   const c = db();
   if (!c) return null;
-  const { data } = await c.from("roles").select("*").eq("company_id", companyId).eq("id", id).single();
+  const { data } = await c
+    .from("roles")
+    .select("*, game_templates(name)")
+    .eq("company_id", companyId)
+    .eq("id", id)
+    .single();
   return data ? toRole(data) : null;
 }
 
@@ -70,6 +77,7 @@ export async function createRole(input: {
   title: string;
   requirements: string | null;
   techStack: string[];
+  templateId: string | null;
 }): Promise<string> {
   const c = db();
   if (!c) throw new Error("Supabase not configured");
@@ -80,6 +88,7 @@ export async function createRole(input: {
       title: input.title,
       requirements: input.requirements,
       tech_stack: input.techStack,
+      template_id: input.templateId,
     })
     .select("id")
     .single();
@@ -91,6 +100,18 @@ export async function setRoleStatus(companyId: string, id: string, status: RoleS
   const c = db();
   if (!c) throw new Error("Supabase not configured");
   const { error } = await c.from("roles").update({ status }).eq("company_id", companyId).eq("id", id);
+  if (error) throw error;
+}
+
+// R4 Assessment Configuration — sets/clears a role's preferred template.
+export async function setRoleTemplate(companyId: string, id: string, templateId: string | null): Promise<void> {
+  const c = db();
+  if (!c) throw new Error("Supabase not configured");
+  const { error } = await c
+    .from("roles")
+    .update({ template_id: templateId })
+    .eq("company_id", companyId)
+    .eq("id", id);
   if (error) throw error;
 }
 

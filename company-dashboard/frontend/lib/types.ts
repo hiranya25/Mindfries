@@ -46,6 +46,10 @@ export interface Role {
   status: RoleStatus;
   requirements: string | null;
   techStack: string[];
+  // R4 Assessment Configuration — a preferred published template, joined by
+  // name for display; the invite form pre-selects it but doesn't require it.
+  templateId: string | null;
+  templateName: string | null;
   createdAt: string;
 }
 

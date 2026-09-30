@@ -24,10 +24,23 @@ export function InviteCandidateForm({
   defaultTemplateId?: string;
   triggerLabel?: string;
 }) {
+  // R4 Assessment Configuration: a role can name a preferred template. Only
+  // auto-follow it when this form wasn't opened locked to a specific
+  // template already (defaultTemplateId set, e.g. from the Assessments
+  // page) — that explicit choice shouldn't get silently overridden by
+  // switching roles.
+  function templateForRole(id: string): string | undefined {
+    const role = roles.find((r) => r.id === id);
+    if (role?.templateId && templates.some((t) => t.id === role.templateId)) return role.templateId;
+    return undefined;
+  }
+
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [templateId, setTemplateId] = useState(defaultTemplateId ?? templates[0]?.id ?? "");
   const [roleId, setRoleId] = useState(roles[0]?.id ?? "");
+  const [templateId, setTemplateId] = useState(
+    defaultTemplateId ?? templateForRole(roles[0]?.id ?? "") ?? templates[0]?.id ?? ""
+  );
   const [candidateName, setCandidateName] = useState("");
   const [candidateEmail, setCandidateEmail] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -108,7 +121,16 @@ export function InviteCandidateForm({
           ) : (
             <>
               <Field label="Role">
-                <Select value={roleId} onChange={(e) => setRoleId(e.target.value)}>
+                <Select
+                  value={roleId}
+                  onChange={(e) => {
+                    setRoleId(e.target.value);
+                    if (!defaultTemplateId) {
+                      const t = templateForRole(e.target.value);
+                      if (t) setTemplateId(t);
+                    }
+                  }}
+                >
                   {roles.map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.title}
