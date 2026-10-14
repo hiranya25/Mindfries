@@ -1,8 +1,17 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { PageHeader, Pill, StatCard } from "@/components/ui";
-import { fmtDate, assessmentStatusLabel, assessmentStatusTone, sessionTone } from "@/lib/format";
-import { getAssessment, listSessionsForCompany } from "@/lib/db";
+import {
+  fmtDate,
+  assessmentStatusLabel,
+  assessmentStatusTone,
+  recommendationLabel,
+  recommendationTone,
+  reportStatusLabel,
+  reportStatusTone,
+  sessionTone,
+} from "@/lib/format";
+import { getAssessment, getReportForAssessment, listSessionsForCompany } from "@/lib/db";
 import { getCurrentSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -17,9 +26,10 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
 
   // sessions.assessment_id is a real FK — a candidate can have more than one
   // run (e.g. a retry), so this filters to all of them, not just one.
-  const sessions = (await listSessionsForCompany(session.company.id)).filter(
-    (s) => s.assessmentId === assessment.id,
-  );
+  const [sessions, report] = await Promise.all([
+    listSessionsForCompany(session.company.id).then((all) => all.filter((s) => s.assessmentId === assessment.id)),
+    getReportForAssessment(session.company.id, assessment.id),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -64,13 +74,22 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
       <div className="hair-card p-5">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-extrabold tracking-tight">Evidence summary</h2>
-          <Link href="/reports" className="text-sm font-semibold text-accent hover:underline">
-            Reports →
+          <Link href={`/reports/${assessment.id}`} className="text-sm font-semibold text-accent hover:underline">
+            Full report →
           </Link>
         </div>
-        <p className="mt-2 text-sm text-dim">
-          Not available yet — evidence capture and the evaluation pipeline aren&apos;t built. See Reports for why.
-        </p>
+        {report ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+            <Pill tone={reportStatusTone[report.status]}>{reportStatusLabel[report.status]}</Pill>
+            {report.recommendation && (
+              <Pill tone={recommendationTone[report.recommendation] ?? "gray"}>
+                {recommendationLabel[report.recommendation] ?? report.recommendation}
+              </Pill>
+            )}
+          </div>
+        ) : (
+          <p className="mt-2 text-sm text-dim">No session yet — nothing to evaluate.</p>
+        )}
       </div>
     </div>
   );

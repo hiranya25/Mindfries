@@ -2,8 +2,10 @@ import "server-only";
 import { db } from "./supabaseAdmin";
 import type {
   Assessment,
+  AssessmentReport,
   AssessmentSession,
   GameTemplate,
+  ReportSummary,
   Role,
   RoleStatus,
   TeamMember,
@@ -205,6 +207,83 @@ export async function listSessionsForCompany(companyId: string): Promise<Assessm
     .eq("company_id", companyId)
     .order("started_at", { ascending: false });
   return (data ?? []).map(toSession);
+}
+
+function toReportSummary(r: any): ReportSummary {
+  // assessment_reports is a reverse (child) relation off sessions — PostgREST
+  // returns it as an object when it infers one-to-one (the unique session_id
+  // FK makes it so), but as a one-element array in some embed shapes. Same
+  // normalization candidate/frontend's notifications/actions.ts uses.
+  const report = Array.isArray(r.assessment_reports) ? r.assessment_reports[0] : r.assessment_reports;
+  return {
+    assessmentId: r.assessment_id,
+    candidateName: r.assessments?.candidate_name ?? null,
+    candidateEmail: r.assessments?.candidate_email ?? "",
+    role: r.assessments?.roles?.title ?? r.assessments?.role ?? null,
+    reportStatus: report?.status ?? null,
+    recommendation: report?.recommendation ?? null,
+    updatedAt: report?.updated_at ?? null,
+  };
+}
+
+// One row per candidate with a session — the company-wide Reports list.
+// Sessions are read-only here (the candidate app writes them), same as
+// listSessionsForCompany; a candidate can restart, so only the latest
+// session per assessment is kept.
+export async function listReportsForCompany(companyId: string): Promise<ReportSummary[]> {
+  const c = db();
+  if (!c) return [];
+  const { data } = await c
+    .from("sessions")
+    .select(
+      "assessment_id, started_at, assessment_reports(status, recommendation, updated_at), assessments(candidate_name, candidate_email, role, roles(title))"
+    )
+    .eq("company_id", companyId)
+    .not("assessment_id", "is", null)
+    .order("started_at", { ascending: false });
+  const seen = new Set<string>();
+  const latestPerAssessment = (data ?? []).filter((r: any) => {
+    if (seen.has(r.assessment_id)) return false;
+    seen.add(r.assessment_id);
+    return true;
+  });
+  return latestPerAssessment.map(toReportSummary);
+}
+
+function toReport(r: any): AssessmentReport {
+  return {
+    id: r.id,
+    status: r.status,
+    recommendation: r.recommendation,
+    summary: r.summary,
+    error: r.error,
+    evidence: (r.evidence_items ?? []).map((e: any) => ({ category: e.category, observation: e.observation })),
+    updatedAt: r.updated_at,
+  };
+}
+
+// Tenant-scoped: only returns a report if its session belongs to this
+// company's assessment. Null means no session has started yet, not that the
+// report failed to load — the caller distinguishes those honestly.
+export async function getReportForAssessment(companyId: string, assessmentId: string): Promise<AssessmentReport | null> {
+  const c = db();
+  if (!c) return null;
+  const { data: session } = await c
+    .from("sessions")
+    .select("id")
+    .eq("company_id", companyId)
+    .eq("assessment_id", assessmentId)
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!session) return null;
+  const { data } = await c
+    .from("assessment_reports")
+    .select("*, evidence_items(category, observation, created_at)")
+    .eq("session_id", session.id)
+    .order("created_at", { referencedTable: "evidence_items", ascending: true })
+    .maybeSingle();
+  return data ? toReport(data) : null;
 }
 
 export async function updateCompanyTeam(companyId: string, team: TeamMember[]): Promise<void> {

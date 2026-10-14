@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canEditSettings, canInviteCandidate, canManageRoles, canManageTeam } from "./permissions";
+import { canEditSettings, canInviteCandidate, canManageRoles, canManageTeam, canViewReports } from "./permissions";
 import type { MemberRole } from "./types";
 
 const roles: MemberRole[] = ["admin", "hiring_manager", "reviewer"];
@@ -25,5 +25,11 @@ describe("canInviteCandidate", () => {
 describe("canManageRoles", () => {
   it("admins and hiring managers can create/close roles, reviewers can't", () => {
     expect(roles.filter(canManageRoles)).toEqual(["admin", "hiring_manager"]);
+  });
+});
+
+describe("canViewReports", () => {
+  it("every role, including reviewer, can view reports", () => {
+    expect(roles.filter(canViewReports)).toEqual(roles);
   });
 });

@@ -1,4 +1,4 @@
-import type { AssessmentStatus, CompanyStatus, Plan, RoleStatus, SessionStatus, TaskVariant, TemplateStatus } from "./types";
+import type { AssessmentStatus, CompanyStatus, Plan, ReportStatus, RoleStatus, SessionStatus, TaskVariant, TemplateStatus } from "./types";
 
 export type Tone = "violet" | "coral" | "green" | "amber" | "gray";
 
@@ -63,3 +63,52 @@ export const sessionTone: Record<SessionStatus, Tone> = {
 export function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
+
+// "none" = no session/report yet — not a real assessment_reports.status value,
+// added here so the Reports list can show one consistent pill per candidate.
+export type ReportStatusDisplay = ReportStatus | "none";
+
+export const reportStatusLabel: Record<ReportStatusDisplay, string> = {
+  none: "Not started",
+  pending: "Queued",
+  generating: "In review",
+  ready: "Ready",
+  failed: "Failed",
+};
+
+export const reportStatusTone: Record<ReportStatusDisplay, Tone> = {
+  none: "gray",
+  pending: "gray",
+  generating: "violet",
+  ready: "green",
+  failed: "coral",
+};
+
+// Matches candidate/frontend's assessments/[sessionId]/report/page.tsx labels
+// so a candidate and their company see the same wording for the same report.
+export const recommendationLabel: Record<string, string> = {
+  strong_hire: "Strong hire",
+  hire: "Hire",
+  lean_no: "Leaning no",
+  no_hire: "No hire",
+};
+
+export const recommendationTone: Record<string, Tone> = {
+  strong_hire: "green",
+  hire: "green",
+  lean_no: "amber",
+  no_hire: "coral",
+};
+
+export const evidenceCategoryLabel: Record<string, string> = {
+  code_evaluation: "Code evaluation",
+  reasoning: "Reasoning",
+  workflow: "Workflow",
+  interview: "Interview",
+  ai_usage: "AI assistant usage",
+  integrity: "Integrity",
+  rubric: "Rubric scores",
+  interview_status: "Interview",
+  provenance: "Where the work came from",
+  incomplete: "Missing from this report",
+};

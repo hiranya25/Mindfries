@@ -19,6 +19,8 @@ describe("lib/db degrade-when-unconfigured behavior", () => {
     await expect(db.listSessionsForCompany("company-1")).resolves.toEqual([]);
     await expect(db.listRoles("company-1")).resolves.toEqual([]);
     await expect(db.getRole("company-1", "role-1")).resolves.toBeNull();
+    await expect(db.listReportsForCompany("company-1")).resolves.toEqual([]);
+    await expect(db.getReportForAssessment("company-1", "assessment-1")).resolves.toBeNull();
   });
 
   it("mutations throw a clear error instead of silently no-op-ing", async () => {

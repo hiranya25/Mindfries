@@ -103,3 +103,33 @@ export interface AssessmentSession {
   elapsedMin: number;
   startedAt: string;
 }
+
+export type ReportStatus = "pending" | "generating" | "ready" | "failed";
+
+export interface EvidenceItem {
+  category: string;
+  observation: string;
+}
+
+// assessment_reports + evidence_items (supabase/migrations/0006_events_and_reports.sql)
+// — written by candidate/backend's evaluation pipeline, read-only here.
+export interface AssessmentReport {
+  id: string;
+  status: ReportStatus;
+  recommendation: string | null;
+  summary: string | null;
+  error: string | null;
+  evidence: EvidenceItem[];
+  updatedAt: string;
+}
+
+// One row per candidate, for the Reports list page.
+export interface ReportSummary {
+  assessmentId: string;
+  candidateName: string | null;
+  candidateEmail: string;
+  role: string | null;
+  reportStatus: ReportStatus | null; // null = no session/report yet
+  recommendation: string | null;
+  updatedAt: string | null;
+}

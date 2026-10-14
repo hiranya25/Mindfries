@@ -19,3 +19,9 @@ export function canInviteCandidate(role: MemberRole): boolean {
 export function canManageRoles(role: MemberRole): boolean {
   return role === "admin" || role === "hiring_manager";
 }
+
+// Every teammate — including reviewer — can see candidate reports; it's the
+// whole point of the "reviewer" role.
+export function canViewReports(role: MemberRole): boolean {
+  return role === "admin" || role === "hiring_manager" || role === "reviewer";
+}
